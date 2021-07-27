@@ -1,6 +1,6 @@
 /* USER CODE BEGIN Header */
 /*
- * FreeRTOS Kernel V10.3.1
+ * FreeRTOS Kernel V10.2.1
  * Portion Copyright (C) 2017 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  * Portion Copyright (C) 2019 StMicroelectronics, Inc.  All Rights Reserved.
  *
@@ -56,10 +56,6 @@
   extern unsigned long getRunTimeCounterValue(void);
 /* USER CODE END 0 */
 #endif
-#ifndef CMSIS_device_header
-#define CMSIS_device_header "stm32l4xx.h"
-#endif /* CMSIS_device_header */
-
 #define configENABLE_FPU                         1
 #define configENABLE_MPU                         0
 
@@ -105,14 +101,6 @@
 
 /* The following flag must be enabled only when using newlib */
 #define configUSE_NEWLIB_REENTRANT          1
-
-/* CMSIS-RTOS V2 flags */
-#define configUSE_OS2_THREAD_SUSPEND_RESUME  1
-#define configUSE_OS2_THREAD_ENUMERATE       1
-#define configUSE_OS2_EVENTFLAGS_FROM_ISR    1
-#define configUSE_OS2_THREAD_FLAGS           1
-#define configUSE_OS2_TIMER                  1
-#define configUSE_OS2_MUTEX                  1
 
 /* Set the following definitions to 1 to include the API function, or zero
 to exclude the API function. */
@@ -178,9 +166,10 @@ standard names. */
 #define vPortSVCHandler    SVC_Handler
 #define xPortPendSVHandler PendSV_Handler
 
-/* IMPORTANT: After 10.3.1 update, Systick_Handler comes from NVIC (if SYS timebase = systick), otherwise from cmsis_os2.c */
+/* IMPORTANT: This define is commented when used with STM32Cube firmware, when the timebase source is SysTick,
+              to prevent overwriting SysTick_Handler defined within STM32Cube HAL */
 
-#define USE_CUSTOM_SYSTICK_HANDLER_IMPLEMENTATION 0
+#define xPortSysTickHandler SysTick_Handler
 
 /* USER CODE BEGIN 2 */
 /* Definitions needed when configGENERATE_RUN_TIME_STATS is on */

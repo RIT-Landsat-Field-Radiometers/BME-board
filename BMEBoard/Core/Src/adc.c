@@ -30,16 +30,8 @@ DMA_HandleTypeDef hdma_adc1;
 /* ADC1 init function */
 void MX_ADC1_Init(void)
 {
-
-  /* USER CODE BEGIN ADC1_Init 0 */
-
-  /* USER CODE END ADC1_Init 0 */
-
   ADC_ChannelConfTypeDef sConfig = {0};
 
-  /* USER CODE BEGIN ADC1_Init 1 */
-
-  /* USER CODE END ADC1_Init 1 */
   /** Common config
   */
   hadc1.Instance = ADC1;
@@ -77,14 +69,10 @@ void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_8;
   sConfig.Rank = ADC_REGULAR_RANK_2;
-  sConfig.Offset = 1;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN ADC1_Init 2 */
-
-  /* USER CODE END ADC1_Init 2 */
 
 }
 
@@ -106,10 +94,10 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
     PC1     ------> ADC1_IN2
     PA3     ------> ADC1_IN8
     */
-    GPIO_InitStruct.Pin = Rain_Ivl_Pin;
+    GPIO_InitStruct.Pin = Rain_lvl_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG_ADC_CONTROL;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(Rain_Ivl_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(Rain_lvl_GPIO_Port, &GPIO_InitStruct);
 
     GPIO_InitStruct.Pin = Wind_DIR_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG_ADC_CONTROL;
@@ -158,7 +146,7 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
     PC1     ------> ADC1_IN2
     PA3     ------> ADC1_IN8
     */
-    HAL_GPIO_DeInit(Rain_Ivl_GPIO_Port, Rain_Ivl_Pin);
+    HAL_GPIO_DeInit(Rain_lvl_GPIO_Port, Rain_lvl_Pin);
 
     HAL_GPIO_DeInit(Wind_DIR_GPIO_Port, Wind_DIR_Pin);
 
