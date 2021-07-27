@@ -1,0 +1,15 @@
+freertos.cpp:143:13:void configureTimerForRunTimeStats()	4	static
+freertos.cpp:147:22:long unsigned int getRunTimeCounterValue()	4	static
+freertos.cpp:153:6:void vApplicationIdleHook()	4	static
+freertos.cpp:167:6:void vApplicationTickHook()	4	static
+freertos.cpp:177:6:void vApplicationStackOverflowHook(TaskHandle_t, signed char*)	16	static
+freertos.cpp:185:6:void vApplicationMallocFailedHook()	4	static
+freertos.cpp:204:6:void MX_FREERTOS_Init()	8	static
+freertos.cpp:335:6:void StartCANMesgTask(void*)	16	static
+freertos.cpp:351:6:void StartMeasureTask(void*)	16	static
+freertos.cpp:367:6:void startMonitor(void*)	16	static
+freertos.cpp:383:6:void startUI(void*)	16	static
+freertos.cpp:399:6:void startUART(void*)	16	static
+freertos.cpp:409:6:void MeasureRoutine(void*)	16	static
+freertos.cpp:416:6:void LEDTimeoutRoutine(void*)	16	static
+freertos.cpp:423:6:void processInput(void*)	16	static
