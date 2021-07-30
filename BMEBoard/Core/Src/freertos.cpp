@@ -19,7 +19,6 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include <LEDManager.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "main.h"
@@ -42,21 +41,21 @@
 #include <cstdint>
 #include <stdio.h>
 #include "BME280.h"
+#include <LEDManager.h>
+
+#include "Logging/Logger.h"
+#include "Logging/UARTLogHandler.h"
+#include "Logging/UARTManager.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef struct
-{
-	char *message;
-	int length;
-} outMessage_t;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-
 
 /* USER CODE END PD */
 
@@ -68,7 +67,12 @@ typedef struct
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 extern BME280 bme1;
-LEDManager leds({.port=GPIOD,.pin=LED_R_Pin}, {.port=GPIOD,.pin=LED_G_Pin}, {.port=GPIOD,.pin=LED_B_Pin});
+LEDManager leds(
+{ .port = GPIOD, .pin = LED_R_Pin },
+{ .port = GPIOD, .pin = LED_G_Pin },
+{ .port = GPIOD, .pin = LED_B_Pin });
+
+UARTManager uartMan(&huart1);
 
 /* Definitions for MeasureTask */
 osThreadId_t MeasureTaskHandle;
@@ -83,10 +87,6 @@ osThreadId_t SysMonitorHandle;
 osThreadAttr_t SysMonitor_attributes =
 { .name = "SysMonitor", };
 
-/* Definitions for ProcessUART */
-osThreadId_t ProcessUARTHandle;
-osThreadAttr_t ProcessUART_attributes =
-{ .name = "ProcessUART", };
 /* Definitions for CANInbox */
 osMessageQueueId_t CANInboxHandle;
 const osMessageQueueAttr_t CANInbox_attributes =
@@ -95,10 +95,7 @@ const osMessageQueueAttr_t CANInbox_attributes =
 osMessageQueueId_t CANOutboxHandle;
 const osMessageQueueAttr_t CANOutbox_attributes =
 { .name = "CANOutbox" };
-/* Definitions for UARTOutbox */
-osMessageQueueId_t UARTOutboxHandle;
-const osMessageQueueAttr_t UARTOutbox_attributes =
-{ .name = "UARTOutbox" };
+
 /* Definitions for MeasureTimer */
 osTimerId_t MeasureTimerHandle;
 const osTimerAttr_t MeasureTimer_attributes =
@@ -125,6 +122,9 @@ const osEventFlagsAttr_t MeasureEvent_attributes =
 osEventFlagsId_t ButtonEventHandle;
 const osEventFlagsAttr_t ButtonEvent_attributes =
 { .name = "ButtonEvent" };
+
+UARTLogHandler * handler(UARTLogHandler::configure(&uartMan, LOG_LEVEL_ALL));
+Logger Log("app");
 
 /* USER CODE END Variables */
 
@@ -216,6 +216,8 @@ void vApplicationMallocFailedHook(void)
 	 to query the size of free heap space that remains (although it does not
 	 provide information on how the remaining heap might be fragmented). */
 }
+
+
 /* USER CODE END 5 */
 
 /**
@@ -235,10 +237,6 @@ void MX_FREERTOS_Init(void)
 
 	SysMonitor_attributes.priority = (osPriority_t) osPriorityLow;
 	SysMonitor_attributes.stack_size = 2048 * 4;
-
-
-	ProcessUART_attributes.priority = (osPriority_t) osPriorityNormal;
-	ProcessUART_attributes.stack_size = 2048 * 4;
 
 	/* USER CODE END Init */
 	/* Create the mutex(es) */
@@ -261,7 +259,6 @@ void MX_FREERTOS_Init(void)
 	MeasureTimerHandle = osTimerNew(startMeasurement, osTimerPeriodic,
 			(void*) nullptr, &MeasureTimer_attributes);
 
-
 	/* creation of ButtonTimeout */
 	ButtonTimeoutHandle = osTimerNew(ProcessButtons, osTimerOnce,
 			(void*) nullptr, &ButtonTimeout_attributes);
@@ -269,7 +266,6 @@ void MX_FREERTOS_Init(void)
 	/* USER CODE BEGIN RTOS_TIMERS */
 	/* start timers, add new ones, ... */
 	osTimerStart(MeasureTimerHandle, 1000); // Take a measurement every second
-
 
 	/* USER CODE END RTOS_TIMERS */
 
@@ -281,10 +277,6 @@ void MX_FREERTOS_Init(void)
 	/* creation of CANOutbox */
 	CANOutboxHandle = osMessageQueueNew(16, sizeof(uint32_t),
 			&CANOutbox_attributes);
-
-	/* creation of UARTOutbox */
-	UARTOutboxHandle = osMessageQueueNew(16, sizeof(outMessage_t),
-			&UARTOutbox_attributes);
 
 	/* USER CODE BEGIN RTOS_QUEUES */
 	/* add queues, ... */
@@ -303,10 +295,6 @@ void MX_FREERTOS_Init(void)
 	SysMonitorHandle = osThreadNew(startMonitoring, (void*) nullptr,
 			&SysMonitor_attributes);
 
-	/* creation of ProcessUART */
-	ProcessUARTHandle = osThreadNew(startUARTIO, (void*) nullptr,
-			&ProcessUART_attributes);
-
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
 	/* USER CODE END RTOS_THREADS */
@@ -314,14 +302,14 @@ void MX_FREERTOS_Init(void)
 	/* creation of MeasureEvent */
 	MeasureEventHandle = osEventFlagsNew(&MeasureEvent_attributes);
 
-
 	/* creation of ButtonEvent */
 	ButtonEventHandle = osEventFlagsNew(&ButtonEvent_attributes);
 
 	/* USER CODE BEGIN RTOS_EVENTS */
 	/* add events, ... */
+	uartMan.start();
 	leds.start();
-
+	Log.info("Application Started");
 	/* USER CODE END RTOS_EVENTS */
 
 }
@@ -336,8 +324,7 @@ void MX_FREERTOS_Init(void)
 void startMeasuring(void *argument)
 {
 	/* USER CODE BEGIN startMeasuring */
-	char textBuffer[256];
-	outMessage_t UARTMessage;
+	Logger privLog("Sensors");
 	/* Infinite loop */
 	for (;;)
 	{
@@ -350,22 +337,18 @@ void startMeasuring(void *argument)
 			double hum = bme1.readHumidity();
 			double temp = bme1.readTemperature();
 
-			UARTMessage.length =
-					sprintf(textBuffer,
-							"[INFO] BME280: Pressure: %8.4f, Humidity: %8.4f, Temperature: %8.4f",
-							press, hum, temp);
-			UARTMessage.message = (char*) pvPortMalloc(UARTMessage.length);
-			memcpy(UARTMessage.message, textBuffer, UARTMessage.length);
-			osMessageQueuePut(UARTOutboxHandle, &UARTMessage, 0, 1000);
+			privLog.debug(
+					"Pressure: %8.4f, Humidity: %8.4f, Temperature: %8.4f",
+					press, hum, temp);
+
+			privLog.debug(
+					"Pressure: %8.4f, Humidity: %8.4f, Temperature: %8.4f",
+					press, hum, temp);
 			osMutexRelease(BME280_lockHandle);
 		}
 		else
 		{
-			UARTMessage.length = sprintf(textBuffer,
-					"[ERROR] BME280: Unable to acquire mutex");
-			UARTMessage.message = (char*) pvPortMalloc(UARTMessage.length);
-			memcpy(UARTMessage.message, textBuffer, UARTMessage.length);
-			osMessageQueuePut(UARTOutboxHandle, &UARTMessage, 0, osWaitForever);
+			privLog.error("Unable to acquire mutex");
 		}
 		osDelay(1);
 	}
@@ -400,86 +383,36 @@ void startCANIO(void *argument)
 void startMonitoring(void *argument)
 {
 	/* USER CODE BEGIN startMonitoring */
-	char textBuffer[256];
-	outMessage_t UARTMessage;
-	int size = 0;
+	Logger privLog("System");
+
 	/* Infinite loop */
 	for (;;)
 	{
 		leds.fastFlash(RED);
-		size = sprintf(textBuffer, "[TEST] LEDs: all fast");
-		UARTMessage.message = (char*) pvPortMalloc(size);
-		memcpy(UARTMessage.message, textBuffer, size);
-		UARTMessage.length = size;
-		osMessageQueuePut(UARTOutboxHandle, &UARTMessage, 0, 900);
+
+		privLog.debug("LEDs all fast");
 
 		osDelay(5000);
 		leds.slowFlash(GREEN);
-		size = sprintf(textBuffer, "[TEST] LEDs: all slow");
-		UARTMessage.message = (char*) pvPortMalloc(size);
-		memcpy(UARTMessage.message, textBuffer, size);
-		UARTMessage.length = size;
-		osMessageQueuePut(UARTOutboxHandle, &UARTMessage, 0, 900);
+		privLog.debug("LEDs all slow");
 
 		osDelay(15000);
 		leds.turnOn(BLUE);
-		size = sprintf(textBuffer, "[TEST] LEDs: all on");
-		UARTMessage.message = (char*) pvPortMalloc(size);
-		memcpy(UARTMessage.message, textBuffer, size);
-		UARTMessage.length = size;
-		osMessageQueuePut(UARTOutboxHandle, &UARTMessage, 0, 900);
+		privLog.debug("LEDs all on");
 
 		osDelay(5000);
 		leds.turnOff(WHITE);
-		size = sprintf(textBuffer, "[TEST] LEDs: all off");
-		UARTMessage.message = (char*) pvPortMalloc(size);
-		memcpy(UARTMessage.message, textBuffer, size);
-		UARTMessage.length = size;
-		osMessageQueuePut(UARTOutboxHandle, &UARTMessage, 0, 900);
+		privLog.debug("LEDs all off");
 
 		size_t freeHeap = xPortGetFreeHeapSize();
 		if (freeHeap < 2000)
 		{
-			size = sprintf(textBuffer, "[WARNING] LOW HEAP: %u bytes remaining",
+			privLog.error("LOW HEAP, %u bytes remaining",
 					freeHeap);
-			UARTMessage.message = (char*) pvPortMalloc(size);
-			memcpy(UARTMessage.message, textBuffer, size);
-			UARTMessage.length = size;
-			osMessageQueuePut(UARTOutboxHandle, &UARTMessage, 0, 900);
 		}
 		osDelay(5000);
 	}
 	/* USER CODE END startMonitoring */
-}
-
-
-/* USER CODE BEGIN Header_startUARTIO */
-/**
- * @brief Function implementing the ProcessUART thread.
- * @param argument: Not used
- * @retval None
- */
-/* USER CODE END Header_startUARTIO */
-void startUARTIO(void *argument)
-{
-	/* USER CODE BEGIN startUARTIO */
-	outMessage_t msg;
-	const char *newline = "\r\n";
-	HAL_UART_Transmit(&huart1, (uint8_t*) newline, 2, -1); // TODO: There is a macro for no timeout in HAL, need to find it
-	/* Infinite loop */
-	for (;;)
-	{
-		auto retval = osMessageQueueGet(UARTOutboxHandle, &msg, nullptr,
-		osWaitForever);
-		if (retval == osOK)
-		{
-			HAL_UART_Transmit(&huart1, (uint8_t*) msg.message, msg.length, -1); // TODO: There is a macro for no timeout in HAL, need to find it
-			HAL_UART_Transmit(&huart1, (uint8_t*) newline, 2, -1); // TODO: There is a macro for no timeout in HAL, need to find it
-			vPortFree(msg.message);
-		}
-		osDelay(1);
-	}
-	/* USER CODE END startUARTIO */
 }
 
 /* startMeasurement function */
@@ -497,7 +430,6 @@ void stopLEDs(void *argument)
 
 	/* USER CODE END stopLEDs */
 }
-
 
 /* ProcessButtons function */
 void ProcessButtons(void *argument)
