@@ -61,9 +61,13 @@
 /* USER CODE BEGIN PV */
 DS28CM00_ID id1(&hi2c1);
 LEDManager leds(
-{ .port = GPIOD, .pin = LED_R_Pin },
-{ .port = GPIOD, .pin = LED_G_Pin },
-{ .port = GPIOD, .pin = LED_B_Pin });
+		//{ .port = GPIOD, .pin = LED_R_Pin },
+		//{ .port = GPIOD, .pin = LED_G_Pin },
+		//{ .port = GPIOD, .pin = LED_B_Pin }
+				{ .port = GPIOD, .pin = LED_G_Pin },
+				{ .port = GPIOD, .pin = LED_B_Pin },
+				{ .port = GPIOD, .pin = LED_R_Pin });
+
 UARTManager uartMan(&huart1);
 UARTLogHandler *handler(UARTLogHandler::configure(&uartMan, LOG_LEVEL_ALL));
 Logger Log("app");
@@ -124,6 +128,7 @@ int main(void)
 	/* USER CODE BEGIN 2 */
 
     HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
+	HAL_GPIO_WritePin(CAN_MODE_GPIO_Port, CAN_MODE_Pin, GPIO_PIN_RESET);
 	/* USER CODE END 2 */
 
 	/* Init scheduler */

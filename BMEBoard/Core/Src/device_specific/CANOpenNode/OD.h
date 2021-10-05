@@ -16,7 +16,7 @@
 
         Created:      9/30/2021 1:47:36 PM
         Created By:   
-        Modified:     9/30/2021 2:07:46 PM
+        Modified:     10/5/2021 3:22:29 PM
         Modified By:  
 
     Device Info:
@@ -104,7 +104,7 @@ typedef struct {
     float32_t x6001_pressure;
     float32_t x6002_windSpeed;
     float32_t x6003_windDirection;
-    bool_t x6004_rainDetection;
+    uint8_t x6004_rainDetection;
 } OD_RAM_t;
 
 #ifndef OD_ATTR_PERSIST_COMM

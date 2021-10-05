@@ -84,7 +84,7 @@ void canopen_start(void)
 			&errInf /*errInfo*/);
 	//	@formatter:on
 
-//	err = CO_CANopenInitPDO(co, co->em, OD, ID, &errInf);	// Delay until after Node-ID assignment
+	err = CO_CANopenInitPDO(co, co->em, OD, pendingID, &errInf);	// Delay until after Node-ID assignment
 
 	CO_CANsetNormalMode(co->CANmodule);
 

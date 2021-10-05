@@ -86,6 +86,8 @@ void Error_Handler(void);
 #define Wind_SPD_Pin GPIO_PIN_6
 #define Wind_SPD_GPIO_Port GPIOC
 #define Wind_SPD_EXTI_IRQn EXTI9_5_IRQn
+#define CAN_MODE_Pin GPIO_PIN_8
+#define CAN_MODE_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

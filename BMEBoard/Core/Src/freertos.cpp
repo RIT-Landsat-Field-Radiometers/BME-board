@@ -242,7 +242,7 @@ void measurementTask(void*)
 
 		OD_set_f32(winDirEntry, 0, windDirection, true);
 
-		OD_set_i8(rainDetEntry, 0, rainDetected, true);
+		OD_set_u8(rainDetEntry, 0, rainDetected, true);
 
 		osDelay(500);
 	}

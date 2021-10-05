@@ -27,7 +27,7 @@ OD_ATTR_PERSIST_COMM OD_PERSIST_COMM_t OD_PERSIST_COMM = {
     .x1007_synchronousWindowLength = 0x00000000,
     .x1014_COB_ID_EMCY = 0x00000080,
     .x1015_inhibitTimeEMCY = 0x0000,
-    .x1017_producerHeartbeatTime = 0x0000,
+    .x1017_producerHeartbeatTime = 0x01F4,
     .x1018_identity = {
         .highestSub_indexSupported = 0x04,
         .vendor_ID = 0xFFFFFFFF,
@@ -38,17 +38,17 @@ OD_ATTR_PERSIST_COMM OD_PERSIST_COMM_t OD_PERSIST_COMM = {
     .x1019_synchronousCounterOverflowValue = 0x00,
     .x1800_TPDOCommunicationParameter = {
         .maxSub_index = 0x02,
-        .COB_IDUsedByTPDO = 0xC0000180,
+        .COB_IDUsedByTPDO = 0x40000180,
         .transmissionType = 0x01
     },
     .x1801_TPDOCommunicationParameter = {
         .maxSub_index = 0x02,
-        .COB_IDUsedByTPDO = 0xC0000280,
+        .COB_IDUsedByTPDO = 0x40000280,
         .transmissionType = 0x01
     },
     .x1802_TPDOCommunicationParameter = {
         .maxSub_index = 0x02,
-        .COB_IDUsedByTPDO = 0xC0000380,
+        .COB_IDUsedByTPDO = 0x40000380,
         .transmissionType = 0x01
     },
     .x1A00_TPDOMappingParameter = {
@@ -73,7 +73,7 @@ OD_ATTR_RAM OD_RAM_t OD_RAM = {
     .x6001_pressure = 0,
     .x6002_windSpeed = 0,
     .x6003_windDirection = 0,
-    .x6004_rainDetection = false
+    .x6004_rainDetection = 0x00
 };
 
 
