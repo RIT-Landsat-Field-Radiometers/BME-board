@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * Portions Copyright ï¿½ 2019 STMicroelectronics International N.V. All rights reserved.
+ * Portions Copyright © 2019 STMicroelectronics International N.V. All rights reserved.
  * Copyright (c) 2013-2019 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -108,15 +108,8 @@ static osKernelState_t KernelState = osKernelInactive;
   definition configHEAP_5_REGIONS as parameter. Overriding configHEAP_5_REGIONS
   is possible by defining it globally or in FreeRTOSConfig.h.
 */
-
-
-
-
-
-
-
-//#if defined(USE_FREERTOS_HEAP_5)
-//#if (configAPPLICATION_ALLOCATED_HEAP == 0)
+#if defined(USE_FREERTOS_HEAP_5)
+#if (configAPPLICATION_ALLOCATED_HEAP == 0)
   /*
     FreeRTOS heap is not defined by the application.
     Single region of size configTOTAL_HEAP_SIZE (defined in FreeRTOSConfig.h)
@@ -125,7 +118,7 @@ static osKernelState_t KernelState = osKernelInactive;
   */
   #define HEAP_5_REGION_SETUP   1
   
-//  #ifndef configHEAP_5_REGIONS
+  #ifndef configHEAP_5_REGIONS
     #define configHEAP_5_REGIONS xHeapRegions
 
     static uint8_t ucHeap[configTOTAL_HEAP_SIZE];
@@ -134,21 +127,18 @@ static osKernelState_t KernelState = osKernelInactive;
       { ucHeap, configTOTAL_HEAP_SIZE },
       { NULL,   0                     }
     };
-//  #else
-//    /* Global definition is provided to override default heap array */
-//    extern HeapRegion_t configHEAP_5_REGIONS[];
-//  #endif
-//#else
-//  /*
-//    The application already defined the array used for the FreeRTOS heap and
-//    called vPortDefineHeapRegions to initialize heap.
-//  */
-//  #define HEAP_5_REGION_SETUP   0
-//#endif /* configAPPLICATION_ALLOCATED_HEAP */
-//#endif /* USE_FREERTOS_HEAP_5 */
-
-
-
+  #else
+    /* Global definition is provided to override default heap array */
+    extern HeapRegion_t configHEAP_5_REGIONS[];
+  #endif
+#else
+  /*
+    The application already defined the array used for the FreeRTOS heap and
+    called vPortDefineHeapRegions to initialize heap.
+  */
+  #define HEAP_5_REGION_SETUP   0
+#endif /* configAPPLICATION_ALLOCATED_HEAP */
+#endif /* USE_FREERTOS_HEAP_5 */
 
 #if defined(SysTick)
 #undef SysTick_Handler
@@ -200,7 +190,9 @@ osStatus_t osKernelInitialize (void) {
   }
   else {
     if (KernelState == osKernelInactive) {
+      #if defined(USE_FREERTOS_HEAP_5) && (HEAP_5_REGION_SETUP == 1)
         vPortDefineHeapRegions (configHEAP_5_REGIONS);
+      #endif
       KernelState = osKernelReady;
       stat = osOK;
     } else {

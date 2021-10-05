@@ -40,12 +40,19 @@
 #include <string.h>
 #include <cstdint>
 #include <stdio.h>
-#include "BME280.h"
-#include <LEDManager.h>
 
-#include "Logging/Logger.h"
+#include "CANopenNode/301/CO_ODinterface.h"
 #include "Logging/UARTLogHandler.h"
-#include "Logging/UARTManager.h"
+
+#include "device_specific/BME280/BME280.h"
+#include "device_specific/Anemometer/Anemometer.h"
+#include "device_specific/RainDetector/RainDetector.h"
+
+#include "bsp/DS28CM00ID/DS28CM00ID.h"
+#include "bsp/LEDs/LEDManager.h"
+#include "bsp/UART/UARTManager.h"
+
+#include "CANOpenNode/OD.h"
 
 /* USER CODE END Includes */
 
@@ -66,132 +73,29 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-extern BME280 bme1;
-LEDManager leds(
-{ .port = GPIOD, .pin = LED_R_Pin },
-{ .port = GPIOD, .pin = LED_G_Pin },
-{ .port = GPIOD, .pin = LED_B_Pin });
+extern DS28CM00_ID id1;
+extern LEDManager leds;
+extern UARTManager uartMan;
+extern Logger Log;
 
-UARTManager uartMan(&huart1);
-
-/* Definitions for MeasureTask */
-osThreadId_t MeasureTaskHandle;
-osThreadAttr_t MeasureTask_attributes =
-{ .name = "MeasureTask", };
-/* Definitions for ProcessCAN */
-osThreadId_t ProcessCANHandle;
-osThreadAttr_t ProcessCAN_attributes =
-{ .name = "ProcessCAN", };
-/* Definitions for SysMonitor */
-osThreadId_t SysMonitorHandle;
-osThreadAttr_t SysMonitor_attributes =
-{ .name = "SysMonitor", };
-
-/* Definitions for CANInbox */
-osMessageQueueId_t CANInboxHandle;
-const osMessageQueueAttr_t CANInbox_attributes =
-{ .name = "CANInbox" };
-/* Definitions for CANOutbox */
-osMessageQueueId_t CANOutboxHandle;
-const osMessageQueueAttr_t CANOutbox_attributes =
-{ .name = "CANOutbox" };
-
-/* Definitions for MeasureTimer */
-osTimerId_t MeasureTimerHandle;
-const osTimerAttr_t MeasureTimer_attributes =
-{ .name = "MeasureTimer" };
-
-/* Definitions for ButtonTimeout */
-osTimerId_t ButtonTimeoutHandle;
-const osTimerAttr_t ButtonTimeout_attributes =
-{ .name = "ButtonTimeout" };
-/* Definitions for BME280_lock */
-osMutexId_t BME280_lockHandle;
-const osMutexAttr_t BME280_lock_attributes =
-{ .name = "BME280_lock" };
 /* Definitions for SerialID_lock */
 osMutexId_t SerialID_lockHandle;
 const osMutexAttr_t SerialID_lock_attributes =
 { .name = "SerialID_lock" };
-/* Definitions for MeasureEvent */
-osEventFlagsId_t MeasureEventHandle;
-const osEventFlagsAttr_t MeasureEvent_attributes =
-{ .name = "MeasureEvent" };
-
-/* Definitions for ButtonEvent */
-osEventFlagsId_t ButtonEventHandle;
-const osEventFlagsAttr_t ButtonEvent_attributes =
-{ .name = "ButtonEvent" };
-
-UARTLogHandler * handler(UARTLogHandler::configure(&uartMan, LOG_LEVEL_ALL));
-Logger Log("app");
 
 /* USER CODE END Variables */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-
+extern void canopen_start(void);
+void measurementTask(void*);
 /* USER CODE END FunctionPrototypes */
-
-void startMeasuring(void *argument);
-void startCANIO(void *argument);
-void startMonitoring(void *argument);
-void startUI(void *argument);
-void startUARTIO(void *argument);
-void startMeasurement(void *argument);
-void stopLEDs(void *argument);
-void LEDSlowToggle(void *argument);
-void LEDFastToggle(void *argument);
-void ProcessButtons(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* Hook prototypes */
-void configureTimerForRunTimeStats(void);
-unsigned long getRunTimeCounterValue(void);
-void vApplicationIdleHook(void);
-void vApplicationTickHook(void);
 void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName);
 void vApplicationMallocFailedHook(void);
-
-/* USER CODE BEGIN 1 */
-/* Functions needed when configGENERATE_RUN_TIME_STATS is on */
-__weak void configureTimerForRunTimeStats(void)
-{
-
-}
-
-__weak unsigned long getRunTimeCounterValue(void)
-{
-	return 0;
-}
-/* USER CODE END 1 */
-
-/* USER CODE BEGIN 2 */
-void vApplicationIdleHook(void)
-{
-	/* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
-	 to 1 in FreeRTOSConfig.h. It will be called on each iteration of the idle
-	 task. It is essential that code added to this hook function never attempts
-	 to block in any way (for example, call xQueueReceive() with a block time
-	 specified, or call vTaskDelay()). If the application makes use of the
-	 vTaskDelete() API function (as this demo application does) then it is also
-	 important that vApplicationIdleHook() is permitted to return to its calling
-	 function, because it is the responsibility of the idle task to clean up
-	 memory allocated by the kernel to any task that has since been deleted. */
-}
-/* USER CODE END 2 */
-
-/* USER CODE BEGIN 3 */
-void vApplicationTickHook(void)
-{
-	/* This function will be called by each tick interrupt if
-	 configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h. User code can be
-	 added here, but the tick hook is called from an interrupt context, so
-	 code must not attempt to block, and only the interrupt safe FreeRTOS API
-	 functions can be used (those that end in FromISR()). */
-}
-/* USER CODE END 3 */
 
 /* USER CODE BEGIN 4 */
 void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
@@ -217,7 +121,6 @@ void vApplicationMallocFailedHook(void)
 	 provide information on how the remaining heap might be fragmented). */
 }
 
-
 /* USER CODE END 5 */
 
 /**
@@ -229,19 +132,8 @@ void MX_FREERTOS_Init(void)
 {
 	/* USER CODE BEGIN Init */
 
-	MeasureTask_attributes.stack_size = 2048 * 4;
-	MeasureTask_attributes.priority = (osPriority_t) osPriorityNormal;
-
-	ProcessCAN_attributes.priority = (osPriority_t) osPriorityNormal;
-	ProcessCAN_attributes.stack_size = 2048 * 4;
-
-	SysMonitor_attributes.priority = (osPriority_t) osPriorityLow;
-	SysMonitor_attributes.stack_size = 2048 * 4;
-
 	/* USER CODE END Init */
 	/* Create the mutex(es) */
-	/* creation of BME280_lock */
-	BME280_lockHandle = osMutexNew(&BME280_lock_attributes);
 
 	/* creation of SerialID_lock */
 	SerialID_lockHandle = osMutexNew(&SerialID_lock_attributes);
@@ -255,193 +147,106 @@ void MX_FREERTOS_Init(void)
 	/* USER CODE END RTOS_SEMAPHORES */
 
 	/* Create the timer(s) */
-	/* creation of MeasureTimer */
-	MeasureTimerHandle = osTimerNew(startMeasurement, osTimerPeriodic,
-			(void*) nullptr, &MeasureTimer_attributes);
-
-	/* creation of ButtonTimeout */
-	ButtonTimeoutHandle = osTimerNew(ProcessButtons, osTimerOnce,
-			(void*) nullptr, &ButtonTimeout_attributes);
 
 	/* USER CODE BEGIN RTOS_TIMERS */
-	/* start timers, add new ones, ... */
-	osTimerStart(MeasureTimerHandle, 1000); // Take a measurement every second
 
 	/* USER CODE END RTOS_TIMERS */
 
 	/* Create the queue(s) */
-	/* creation of CANInbox */
-	CANInboxHandle = osMessageQueueNew(16, sizeof(uint32_t),
-			&CANInbox_attributes);
-
-	/* creation of CANOutbox */
-	CANOutboxHandle = osMessageQueueNew(16, sizeof(uint32_t),
-			&CANOutbox_attributes);
 
 	/* USER CODE BEGIN RTOS_QUEUES */
 	/* add queues, ... */
 	/* USER CODE END RTOS_QUEUES */
 
 	/* Create the thread(s) */
-	/* creation of MeasureTask */
-	MeasureTaskHandle = osThreadNew(startMeasuring, (void*) nullptr,
-			&MeasureTask_attributes);
-
-	/* creation of ProcessCAN */
-	ProcessCANHandle = osThreadNew(startCANIO, (void*) nullptr,
-			&ProcessCAN_attributes);
-
-	/* creation of SysMonitor */
-	SysMonitorHandle = osThreadNew(startMonitoring, (void*) nullptr,
-			&SysMonitor_attributes);
 
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
+	osThreadNew(measurementTask, nullptr, nullptr);
 	/* USER CODE END RTOS_THREADS */
 
 	/* creation of MeasureEvent */
-	MeasureEventHandle = osEventFlagsNew(&MeasureEvent_attributes);
 
 	/* creation of ButtonEvent */
-	ButtonEventHandle = osEventFlagsNew(&ButtonEvent_attributes);
 
 	/* USER CODE BEGIN RTOS_EVENTS */
 	/* add events, ... */
 	uartMan.start();
-	leds.start();
+	leds.start(false);
 	Log.info("Application Started");
+	canopen_start();
 	/* USER CODE END RTOS_EVENTS */
 
 }
 
-/* USER CODE BEGIN Header_startMeasuring */
-/**
- * @brief  Function implementing the MeasureTask thread.
- * @param  argument: Not used
- * @retval None
- */
-/* USER CODE END Header_startMeasuring */
-void startMeasuring(void *argument)
-{
-	/* USER CODE BEGIN startMeasuring */
-	Logger privLog("Sensors");
-	/* Infinite loop */
-	for (;;)
-	{
-		auto retval = osEventFlagsWait(MeasureEventHandle, 0x01, osFlagsWaitAny,
-		osWaitForever);
-		retval = osMutexAcquire(BME280_lockHandle, 1000);
-		if (retval == osOK)
-		{
-			double press = bme1.readPressure();
-			double hum = bme1.readHumidity();
-			double temp = bme1.readTemperature();
-
-			privLog.debug(
-					"Pressure: %8.4f, Humidity: %8.4f, Temperature: %8.4f",
-					press, hum, temp);
-
-			privLog.debug(
-					"Pressure: %8.4f, Humidity: %8.4f, Temperature: %8.4f",
-					press, hum, temp);
-			osMutexRelease(BME280_lockHandle);
-		}
-		else
-		{
-			privLog.error("Unable to acquire mutex");
-		}
-		osDelay(1);
-	}
-	/* USER CODE END startMeasuring */
-}
-
-/* USER CODE BEGIN Header_startCANIO */
-/**
- * @brief Function implementing the ProcessCAN thread.
- * @param argument: Not used
- * @retval None
- */
-/* USER CODE END Header_startCANIO */
-void startCANIO(void *argument)
-{
-	/* USER CODE BEGIN startCANIO */
-	/* Infinite loop */
-	for (;;)
-	{
-		osDelay(1);
-	}
-	/* USER CODE END startCANIO */
-}
-
-/* USER CODE BEGIN Header_startMonitoring */
-/**
- * @brief Function implementing the SysMonitor thread.
- * @param argument: Not used
- * @retval None
- */
-/* USER CODE END Header_startMonitoring */
-void startMonitoring(void *argument)
-{
-	/* USER CODE BEGIN startMonitoring */
-	Logger privLog("System");
-
-	/* Infinite loop */
-	for (;;)
-	{
-		leds.fastFlash(RED);
-
-		privLog.debug("LEDs all fast");
-
-		osDelay(5000);
-		leds.slowFlash(GREEN);
-		privLog.debug("LEDs all slow");
-
-		osDelay(15000);
-		leds.turnOn(BLUE);
-		privLog.debug("LEDs all on");
-
-		osDelay(5000);
-		leds.turnOff(WHITE);
-		privLog.debug("LEDs all off");
-
-		size_t freeHeap = xPortGetFreeHeapSize();
-		if (freeHeap < 2000)
-		{
-			privLog.error("LOW HEAP, %u bytes remaining",
-					freeHeap);
-		}
-		osDelay(5000);
-	}
-	/* USER CODE END startMonitoring */
-}
-
-/* startMeasurement function */
-void startMeasurement(void *argument)
-{
-	/* USER CODE BEGIN startMeasurement */
-	osEventFlagsSet(MeasureEventHandle, 0x01);
-	/* USER CODE END startMeasurement */
-}
-
-/* stopLEDs function */
-void stopLEDs(void *argument)
-{
-	/* USER CODE BEGIN stopLEDs */
-
-	/* USER CODE END stopLEDs */
-}
-
-/* ProcessButtons function */
-void ProcessButtons(void *argument)
-{
-	/* USER CODE BEGIN ProcessButtons */
-
-	/* USER CODE END ProcessButtons */
-}
-
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+void measurementTask(void*)
+{
+	Logger ilog("MeasureTask");
 
+	ilog.info("Starting measurements");
+
+	const osMutexAttr_t ADC_lock_attributes =
+	{ .name = "ADC_lock" };
+	osMutexId_t ADC_lockHandle = osMutexNew(&ADC_lock_attributes);
+
+	Anemometer wind(ADC_lockHandle);
+	RainDetector rain(ADC_lockHandle);
+
+	BME280 bme1(&hspi1, BME_CS_GPIO_Port, BME_CS_Pin);
+
+	bool initalized = bme1.init();
+	if (!initalized)
+	{
+		ilog.error("BME initialization failed");
+		for (;;)
+			osDelay(1000);
+	}
+
+	float pressure = 0.0;
+	auto pressEntry = OD_ENTRY_H6001_pressure;
+
+	float humidity = 0.0;
+	auto humEntry = OD_ENTRY_H6000_humidity;
+
+	float windSpeed = 0.0;
+	auto winSpdEntry = OD_ENTRY_H6002_windSpeed;
+
+	float windDirection = 0.0;
+	auto winDirEntry = OD_ENTRY_H6003_windDirection;
+
+	bool rainDetected = false;
+	auto rainDetEntry = OD_ENTRY_H6004_rainDetection;
+
+	for (;;)
+	{
+		pressure = bme1.readPressure();
+		humidity = bme1.readHumidity();
+
+		windSpeed = wind.getAverageSpeed();
+		windDirection = wind.getAngle();
+
+		rainDetected = rain.isRaining();
+
+		ilog.info(
+				"Pressure: %8.8f pA, Humidity: %8.8f%%, Wind Speed: %8.8f m/s, Wind Direction: %8.8f* from north, Rain: %s",
+				pressure, humidity, windSpeed, windDirection,
+				rainDetected ? "Yes" : "No");
+
+		OD_set_f32(pressEntry, 0, pressure, true);
+
+		OD_set_f32(humEntry, 0, humidity, true);
+
+		OD_set_f32(winSpdEntry, 0, windSpeed, true);
+
+		OD_set_f32(winDirEntry, 0, windDirection, true);
+
+		OD_set_i8(rainDetEntry, 0, rainDetected, true);
+
+		osDelay(500);
+	}
+}
 /* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -5,6 +5,7 @@
  */
 
 #include "BME280.h"
+
 #include <limits>
 #include <cmath>
 
@@ -136,7 +137,7 @@ double BME280::readPressure(void)
 
 	p = ((p + var1 + var2) >> 8) + (((int64_t) _bme280_calib.dig_P7) << 4);
 	double ptemp = (double) p / 256.0;
-	return ptemp / 6894.7572931783;
+	return ptemp;
 }
 
 double BME280::readHumidity(void)

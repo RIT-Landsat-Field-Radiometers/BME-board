@@ -6,8 +6,8 @@
  *      Derived from: https://github.com/adafruit/Adafruit_BME280_Library
  */
 
-#ifndef INC_BME280_H_
-#define INC_BME280_H_
+#ifndef SRC_DEVICE_SPECIFIC_BME280_BME280_H_
+#define SRC_DEVICE_SPECIFIC_BME280_BME280_H_
 
 #include <cstdint>
 #include "stm32l4xx_hal.h"
@@ -321,4 +321,4 @@ protected:
 	  ctrl_hum _humReg; //!< hum register object
 };
 
-#endif /* INC_BME280_H_ */
+#endif /* SRC_DEVICE_SPECIFIC_BME280_BME280_H_ */

@@ -33,10 +33,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "BME280.h"
 #include <string.h>
 #include <cstdint>
 #include <stdio.h>
+#include "bsp/DS28CM00ID/DS28CM00ID.h"
+#include "bsp/LEDs/LEDManager.h"
+#include "bsp/UART/UARTManager.h"
+#include "Logging/UARTLogHandler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,7 +59,14 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-BME280 bme1(&hspi1, BME_CS_GPIO_Port, BME_CS_Pin);
+DS28CM00_ID id1(&hi2c1);
+LEDManager leds(
+{ .port = GPIOD, .pin = LED_R_Pin },
+{ .port = GPIOD, .pin = LED_G_Pin },
+{ .port = GPIOD, .pin = LED_B_Pin });
+UARTManager uartMan(&huart1);
+UARTLogHandler *handler(UARTLogHandler::configure(&uartMan, LOG_LEVEL_ALL));
+Logger Log("app");
 char textbuffer[256];
 /* USER CODE END PV */
 
@@ -105,18 +115,15 @@ int main(void)
 	MX_CAN1_Init();
 	MX_I2C1_Init();
 	MX_SPI1_Init();
-	MX_TIM3_Init();
 	MX_USART1_UART_Init();
 	MX_CRC_Init();
 	MX_RNG_Init();
+	MX_TIM15_Init();
+	MX_TIM16_Init();
+	MX_TIM2_Init();
 	/* USER CODE BEGIN 2 */
-	bool initalized = bme1.init();
-	if (!initalized)
-	{
-		int size = sprintf(textbuffer, "\r\nBME 1 initialization failed!\r\n");
-		HAL_UART_Transmit(&huart1, (uint8_t*) textbuffer, size, -1);
-		Error_Handler();
-	}
+
+    HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
 	/* USER CODE END 2 */
 
 	/* Init scheduler */
@@ -166,10 +173,10 @@ void SystemClock_Config(void)
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
 	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
 	RCC_OscInitStruct.PLL.PLLM = 1;
-	RCC_OscInitStruct.PLL.PLLN = 16;
+	RCC_OscInitStruct.PLL.PLLN = 40;
 	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
 	RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
-	RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV8;
+	RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
 	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
 	{
 		Error_Handler();
@@ -183,7 +190,7 @@ void SystemClock_Config(void)
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
 	{
 		Error_Handler();
 	}
@@ -209,6 +216,7 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
+extern void canopen_oneMs(void);
 /* USER CODE END 4 */
 
 /**
@@ -222,9 +230,12 @@ void SystemClock_Config(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	/* USER CODE BEGIN Callback 0 */
-
+	if (htim->Instance == TIM15)
+	{
+		canopen_oneMs();
+	}
 	/* USER CODE END Callback 0 */
-	if (htim->Instance == TIM1)
+	if (htim->Instance == TIM17)
 	{
 		HAL_IncTick();
 	}

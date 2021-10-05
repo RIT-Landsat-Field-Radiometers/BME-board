@@ -47,7 +47,7 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
+#define FW_VERSION 1	// Anytime the firmware is changed, this needs to be incremented
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
@@ -85,6 +85,7 @@ void Error_Handler(void);
 #define TEST_BTN_EXTI_IRQn EXTI15_10_IRQn
 #define Wind_SPD_Pin GPIO_PIN_6
 #define Wind_SPD_GPIO_Port GPIOC
+#define Wind_SPD_EXTI_IRQn EXTI9_5_IRQn
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

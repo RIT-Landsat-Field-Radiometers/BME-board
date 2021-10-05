@@ -1,0 +1,3 @@
+[submodule "BMEBoard/Core/Src/shared_utils"]
+	path = BMEBoard/Core/Src/shared_utils
+	url = https://rot2666@bitbucket.org/rot2666/shared_utils.git
