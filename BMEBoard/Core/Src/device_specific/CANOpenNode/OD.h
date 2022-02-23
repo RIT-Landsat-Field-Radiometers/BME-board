@@ -14,9 +14,9 @@
         Project File: BME.xdd
         File Version: 1
 
-        Created:      9/30/2021 1:47:36 PM
+        Created:      9/30/2021 12:47:36 PM
         Created By:   
-        Modified:     10/5/2021 3:22:29 PM
+        Modified:     2/4/2022 10:55:41 AM
         Modified By:  
 
     Device Info:
@@ -30,6 +30,8 @@
 
 #ifndef OD_H
 #define OD_H
+
+#include "301/CO_ODinterface.h"
 /*******************************************************************************
     Counters of OD objects
 *******************************************************************************/
@@ -71,16 +73,28 @@ typedef struct {
         uint8_t maxSub_index;
         uint32_t COB_IDUsedByTPDO;
         uint8_t transmissionType;
+        uint16_t inhibitTime;
+        uint8_t compatibilityEntry;
+        uint16_t eventTimer;
+        uint8_t SYNCStartValue;
     } x1800_TPDOCommunicationParameter;
     struct {
         uint8_t maxSub_index;
         uint32_t COB_IDUsedByTPDO;
         uint8_t transmissionType;
+        uint16_t inhibitTime;
+        uint8_t compatibilityEntry;
+        uint16_t eventTimer;
+        uint8_t SYNCStartValue;
     } x1801_TPDOCommunicationParameter;
     struct {
         uint8_t maxSub_index;
         uint32_t COB_IDUsedByTPDO;
         uint8_t transmissionType;
+        uint16_t inhibitTime;
+        uint8_t compatibilityEntry;
+        uint16_t eventTimer;
+        uint8_t SYNCStartValue;
     } x1802_TPDOCommunicationParameter;
     struct {
         uint8_t numberOfMappedObjects;
@@ -95,6 +109,7 @@ typedef struct {
     struct {
         uint8_t numberOfMappedObjects;
         uint32_t mappedObject_1;
+        uint32_t mappedObject_2;
     } x1A02_TPDOMappingParameter;
 } OD_PERSIST_COMM_t;
 
@@ -105,6 +120,7 @@ typedef struct {
     float32_t x6002_windSpeed;
     float32_t x6003_windDirection;
     uint8_t x6004_rainDetection;
+    float32_t x6005_airTemp;
 } OD_RAM_t;
 
 #ifndef OD_ATTR_PERSIST_COMM
@@ -148,6 +164,7 @@ extern OD_ATTR_OD OD_t *OD;
 #define OD_ENTRY_H6002 &OD->list[19]
 #define OD_ENTRY_H6003 &OD->list[20]
 #define OD_ENTRY_H6004 &OD->list[21]
+#define OD_ENTRY_H6005 &OD->list[22]
 
 
 /*******************************************************************************
@@ -175,6 +192,7 @@ extern OD_ATTR_OD OD_t *OD;
 #define OD_ENTRY_H6002_windSpeed &OD->list[19]
 #define OD_ENTRY_H6003_windDirection &OD->list[20]
 #define OD_ENTRY_H6004_rainDetection &OD->list[21]
+#define OD_ENTRY_H6005_airTemp &OD->list[22]
 
 
 /*******************************************************************************

@@ -29,9 +29,14 @@ Anemometer::Anemometer(osMutexId_t adc)
 	conversionFlags = osEventFlagsNew(nullptr);
 	sampleQueue = osMessageQueueNew(20, sizeof(sample_time), nullptr);
 	_sampleQueue = sampleQueue;
-	const osThreadAttr_t Task_attributes =
-	{ .name = "AnemometerTask", .stack_size = 1024 * 4, .priority =
-			(osPriority_t) osPriorityNormal };
+	osThreadAttr_t Task_attributes;
+//	=
+//	{ .name = "AnemometerTask", .stack_size = 1024 * 4, .priority =
+//			(osPriority_t) osPriorityNormal };
+	Task_attributes.name = "AnemometerTask";
+	Task_attributes.stack_size = 1024 * 4;
+	Task_attributes.priority = (osPriority_t) osPriorityNormal;
+
 	threadID = osThreadNew(mainThread, (void*) this, &Task_attributes);
 
 }

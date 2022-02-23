@@ -219,10 +219,14 @@ void measurementTask(void*)
 	bool rainDetected = false;
 	auto rainDetEntry = OD_ENTRY_H6004_rainDetection;
 
+	float airTemp = 0.0;
+	auto tempEntry = OD_ENTRY_H6005_airTemp;
+
 	for (;;)
 	{
 		pressure = bme1.readPressure();
 		humidity = bme1.readHumidity();
+		airTemp = bme1.readTemperature();
 
 		windSpeed = wind.getAverageSpeed();
 		windDirection = wind.getAngle();
@@ -230,8 +234,11 @@ void measurementTask(void*)
 		rainDetected = rain.isRaining();
 
 		ilog.info(
-				"Pressure: %8.8f pA, Humidity: %8.8f%%, Wind Speed: %8.8f m/s, Wind Direction: %8.8f* from north, Rain: %s",
-				pressure, humidity, windSpeed, windDirection,
+				"Pressure: %8.8f pA, Humidity: %8.8f%, Air Temperature: %8.8f, "
+				"Wind Speed: %8.8f m/s, Wind Direction: %8.8f* from north, "
+				"Rain: %s",
+				pressure, humidity, airTemp,
+				windSpeed, windDirection,
 				rainDetected ? "Yes" : "No");
 
 		OD_set_f32(pressEntry, 0, pressure, true);
@@ -243,6 +250,8 @@ void measurementTask(void*)
 		OD_set_f32(winDirEntry, 0, windDirection, true);
 
 		OD_set_u8(rainDetEntry, 0, rainDetected, true);
+
+		OD_set_f32(tempEntry, 0, airTemp, true);
 
 		osDelay(500);
 	}

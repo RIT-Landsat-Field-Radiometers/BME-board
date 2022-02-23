@@ -61,12 +61,13 @@
 /* USER CODE BEGIN PV */
 DS28CM00_ID id1(&hi2c1);
 LEDManager leds(
-		//{ .port = GPIOD, .pin = LED_R_Pin },
-		//{ .port = GPIOD, .pin = LED_G_Pin },
-		//{ .port = GPIOD, .pin = LED_B_Pin }
-				{ .port = GPIOD, .pin = LED_G_Pin },
-				{ .port = GPIOD, .pin = LED_B_Pin },
-				{ .port = GPIOD, .pin = LED_R_Pin });
+		{ .port = GPIOD, .pin = LED_R_Pin },
+		{ .port = GPIOD, .pin = LED_G_Pin },
+		{ .port = GPIOD, .pin = LED_B_Pin }
+//				{ .port = GPIOD, .pin = LED_G_Pin },
+//				{ .port = GPIOD, .pin = LED_B_Pin },
+//				{ .port = GPIOD, .pin = LED_R_Pin }
+				);
 
 UARTManager uartMan(&huart1);
 UARTLogHandler *handler(UARTLogHandler::configure(&uartMan, LOG_LEVEL_ALL));
