@@ -161,5 +161,7 @@ void canopen_oneMs(void)
 		leds.turnOff(color::GREEN);
 	}
 	__HAL_TIM_SET_COUNTER(&htim16, 0);
+
+	// log CANopen error, then soft reset (reset all 3 boards)
 }
 
